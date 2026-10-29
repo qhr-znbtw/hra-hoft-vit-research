@@ -1,10 +1,12 @@
-# ViT Transfer-Learning Baselines
+# HRA and HOFT Research on ViT
 
-A compact and reproducible benchmark for comparing three transfer-learning strategies on a frozen ViT-B/16 backbone:
+A compact and reproducible benchmark for comparing Householder-based orthogonal adaptation with three standard transfer-learning baselines on a frozen ViT-B/16 backbone:
 
 - **Linear Probe** — train only a task-specific classifier.
 - **LoRA** — adapt the Query and Value projections with rank-8 low-rank updates.
 - **Block OFT** — adapt the Query and Value projections with block-diagonal orthogonal transformations.
+- **HRA** — right-adapt Query and Value with products of Householder reflections.
+- **HOFT** — apply compact Householder transformations to both sides of Query and Value.
 
 The repository uses the same backbone, data splits, optimizer family, schedule, preprocessing, and random seed across all methods. Its purpose is to provide a clean baseline for later research on orthogonal and parameter-efficient fine-tuning methods.
 
@@ -27,12 +29,14 @@ All results below use one fixed seed (`42`) and the best validation checkpoint f
 | Method | DTD | EuroSAT | dSprites Orientation | Adapter parameters |
 | --- | ---: | ---: | ---: | ---: |
 | Linear Probe | 67.13% | 89.24% | 24.48% | 0 |
-| LoRA, rank 8, Q+V | 69.68% | **94.24%** | **49.58%** | 294,912 |
-| Block OFT, block size 24, Q+V | **70.27%** | 93.76% | 46.07% | **211,968** |
+| LoRA, rank 8, Q+V | 69.68% | 94.24% | **49.58%** | 294,912 |
+| Block OFT, block size 24, Q+V | **70.27%** | 93.76% | 46.07% | 211,968 |
+| HRA, rank 8, Q+V | 68.67% | 91.80% | 38.16% | **147,456** |
+| HOFT, rank 4 per side, Q+V | 69.26% | **94.87%** | 46.86% | **147,456** |
 
-LoRA gives the strongest result on EuroSAT and dSprites Orientation. Block OFT gives the best DTD accuracy while using 28.1% fewer adapter parameters than LoRA. These are single-seed results and should be interpreted as a controlled implementation benchmark rather than a statistically conclusive ranking.
+HOFT gives the strongest EuroSAT result, LoRA is strongest on dSprites Orientation, and block OFT is strongest on DTD. HRA and HOFT use half as many adapter parameters as rank-8 LoRA. These are single-seed results and should be interpreted as a controlled implementation benchmark rather than a statistically conclusive ranking.
 
-Detailed parameter counts, timings, peak GPU memory, and best epochs are available in the [benchmark report](reports/baseline_benchmark.md).
+Detailed HRA/HOFT parameter counts, timings, peak GPU memory, and best epochs are available in the [research report](reports/hra_hoft_benchmark.md). The original three-method results remain documented in the [baseline report](reports/baseline_benchmark.md).
 
 ## Experimental Protocol
 
@@ -61,7 +65,9 @@ Detailed parameter counts, timings, peak GPU memory, and best epochs are availab
 ├── experiments/
 │   ├── linear_probe/          # Frozen backbone and trainable classifier
 │   ├── lora/                  # Rank-8 Query/Value LoRA
-│   └── oft/                   # Block-diagonal Query/Value OFT
+│   ├── oft/                   # Block-diagonal Query/Value OFT
+│   ├── hra/                   # Rank-8 Query/Value HRA
+│   └── hoft/                  # Rank-4 double-sided Query/Value HOFT
 ├── vit_core/                  # Shared ViT, data, training, and evaluation code
 ├── scripts/                   # Dataset and pretrained-weight preparation
 ├── tests/                     # Algebra, integration, and loading checks
@@ -104,7 +110,7 @@ python -m scripts.download_pretrained_model
 
 Datasets, pretrained weights, checkpoints, and model binaries are intentionally excluded from Git.
 
-## Running the Baselines
+## Running the Experiments
 
 Each entry point requires one of `dtd`, `eurosat`, or `dsprites_orientation`.
 
@@ -117,6 +123,12 @@ python -m experiments.lora.run_lora --task dtd
 
 # Block OFT
 python -m experiments.oft.run_oft --task dtd
+
+# HRA
+python -m experiments.hra.run_hra --task dtd
+
+# HOFT
+python -m experiments.hoft.run_hoft --task dtd
 ```
 
 Replace `dtd` with another supported task to reproduce the remaining results. The best validation checkpoint and a JSON result summary are saved automatically.
@@ -128,11 +140,9 @@ python -m tests.test_pretrained_loading
 python -m tests.test_linear_probe
 python -m tests.test_lora
 python -m tests.test_oft
+python -m tests.test_hra
+python -m tests.test_hoft
 ```
-
-## Scope
-
-This repository deliberately contains only three standard baselines. More experimental methods such as HRA and HOFT can be developed in a separate research repository while reusing the protocol defined here.
 
 ## References
 
@@ -140,3 +150,5 @@ This repository deliberately contains only three standard baselines. More experi
 - [Visual Task Adaptation Benchmark](https://arxiv.org/abs/1910.04867)
 - [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)
 - [Controlling Text-to-Image Diffusion by Orthogonal Finetuning](https://arxiv.org/abs/2306.07280)
+- [Householder Reflection Adaptation](https://arxiv.org/abs/2405.17484)
+- [HOFT: Householder Orthogonal Fine-tuning](https://arxiv.org/abs/2505.16531)

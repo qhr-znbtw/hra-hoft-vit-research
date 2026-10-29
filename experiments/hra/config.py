@@ -1,0 +1,8 @@
+"""Configuration for the Mini-VTAB ViT-B/16 HRA experiments."""
+
+HRA_RANK = 8
+NUM_EPOCHS = 100
+WARMUP_EPOCHS = 10
+HRA_LEARNING_RATE = 1e-4
+CLASSIFIER_LEARNING_RATE = 1e-3
+WEIGHT_DECAY = 1e-4
